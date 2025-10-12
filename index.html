@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kuis Cepat — Adib Edition</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#22c55e;
+      --muted:#94a3b8;
+      --danger:#ef4444;
+      font-family: Inter, sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:#e6eef8;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .wrap{
+      width:100%;
+      max-width:900px;
+      display:grid;
+      grid-template-columns: 1fr 280px;
+      gap:18px;
+    }
+    @media (max-width:800px){.wrap{grid-template-columns:1fr}}
+    .card{
+      background:var(--card);
+      border-radius:12px;
+      padding:16px;
+    }
+    .q-text{font-size:20px;font-weight:600;margin-bottom:12px}
+    .choices{display:grid;gap:10px}
+    .choice{
+      background:rgba(255,255,255,0.05);
+      padding:12px;
+      border-radius:8px;
+      cursor:pointer;
+      border:2px solid transparent;
+      transition:.15s;
+    }
+    .choice.correct{border-color:var(--accent)}
+    .choice.wrong{border-color:var(--danger)}
+    button.btn{
+      background:var(--accent);
+      border:none;
+      color:#052e14;
+      font-weight:700;
+      padding:10px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      margin-top:12px;
+    }
+
+    /* Popup skor akhir */
+    .popup{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.7);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10;
+      visibility:hidden;
+      opacity:0;
+      transition:opacity .3s ease;
+    }
+    .popup.active{visibility:visible;opacity:1}
+    .popup-box{
+      background:var(--card);
+      border-radius:14px;
+      padding:24px;
+      text-align:center;
+      max-width:320px;
+      width:90%;
+      box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    }
+    .popup-box h2{margin-top:0;color:var(--accent)}
+    .popup-box p{color:var(--muted);margin:8px 0}
+    .popup-box button{
+      background:var(--accent);
+      color:#052e14;
+      border:none;
+      padding:10px 18px;
+      border-radius:8px;
+      font-weight:700;
+      cursor:pointer;
+      margin-top:14px;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card main">
+      <div id="qText" class="q-text">Memuat soal...</div>
+      <div id="choices" class="choices"></div>
+      <button id="nextBtn" class="btn">Next</button>
+    </section>
+    <aside class="card side">
+      <p>Skor: <strong id="score">0</strong></p>
+      <p>Soal: <span id="progress">0</span> / <span id="total">0</span></p>
+    </aside>
+  </main>
+
+  <!-- Popup hasil skor -->
+  <div id="popup" class="popup">
+    <div class="popup-box">
+      <h2>Permainan Selesai!</h2>
+      <p id="finalScore">Skor akhir: 0</p>
+      <p id="highScore">Skor tertinggi: 0</p>
+      <button id="playAgain">Main Lagi</button>
+    </div>
+  </div>
+
+  <!-- Lagu Game Over -->
+  <audio id="gameOverMusic" src="bet-polibet.mp3" preload="auto"></audio>
+
+  <script>
+    const QUESTIONS = [
+      {q:"Beli sabu dimane ?",choices:["Setegar","Beting","Serdam","Paris"],correct:1},
+      {q:"Cara menikmati sabu ?",choices:["Dihirup","Ditelan","Diberakan","Dibuang"],correct:0},
+      {q:"Siape yang suke sabu ?",choices:["Fawwaz","Rio","Izzuddin","Benar semua"],correct:3},
+      {q:"Kemana rio make sabu ?",choices:["Beting","Dansen","Ampera","Ujung pandang"],correct:2},
+      
+    ];
+
+    let idx=0,score=0;
+    const qText=document.getElementById("qText");
+    const choices=document.getElementById("choices");
+    const nextBtn=document.getElementById("nextBtn");
+    const scoreEl=document.getElementById("score");
+    const progress=document.getElementById("progress");
+    const total=document.getElementById("total");
+    const popup=document.getElementById("popup");
+    const finalScore=document.getElementById("finalScore");
+    const highScore=document.getElementById("highScore");
+    const playAgain=document.getElementById("playAgain");
+    const gameOverMusic=document.getElementById("gameOverMusic");
+
+    // Izinkan audio setelah klik pertama
+    document.body.addEventListener('click', ()=>{
+      gameOverMusic.play().catch(()=>{});
+      gameOverMusic.pause();
+    }, {once:true});
+
+    total.textContent=QUESTIONS.length;
+    const HS_KEY="highscore_quiz";
+    let high=parseInt(localStorage.getItem(HS_KEY)||"0",10);
+    highScore.textContent="Skor tertinggi: "+high;
+
+    function loadQuestion(){
+      const q=QUESTIONS[idx];
+      qText.textContent=q.q;
+      progress.textContent=idx+1;
+      choices.innerHTML="";
+      q.choices.forEach((c,i)=>{
+        const div=document.createElement("div");
+        div.className="choice";
+        div.textContent=c;
+        div.onclick=()=>selectChoice(div,i);
+        choices.appendChild(div);
+      });
+    }
+
+    function selectChoice(div,i){
+      const q=QUESTIONS[idx];
+      const all=document.querySelectorAll(".choice");
+      all.forEach(c=>c.onclick=null);
+      if(i===q.correct){
+        div.classList.add("correct");
+        score+=10;
+      }else{
+        div.classList.add("wrong");
+        score=Math.max(0,score-3);
+        all[q.correct].classList.add("correct");
+      }
+      scoreEl.textContent=score;
+    }
+
+    nextBtn.onclick=()=>{
+      if(idx<QUESTIONS.length-1){
+        idx++;
+        loadQuestion();
+      }else{
+        showPopup();
+      }
+    };
+
+    function showPopup(){
+      finalScore.textContent="Skor akhir: "+score;
+      if(score>high){
+        high=score;
+        localStorage.setItem(HS_KEY,high);
+      }
+      highScore.textContent="Skor tertinggi: "+high;
+      popup.classList.add("active");
+      gameOverMusic.currentTime=0;
+      gameOverMusic.play(); // lagu diputar di akhir
+    }
+
+    playAgain.onclick=()=>{
+      popup.classList.remove("active");
+      idx=0;
+      score=0;
+      scoreEl.textContent=0;
+      loadQuestion();
+      gameOverMusic.pause();
+      gameOverMusic.currentTime=0;
+    };
+
+    loadQuestion();
+  </script>
+</body>
+</html>
