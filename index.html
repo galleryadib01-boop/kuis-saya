@@ -1,227 +1,373 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kuis Cepat</title>
+  <title>Snake — Adib Edition</title>
   <style>
-    :root{
-      --bg:#0f1724;
-      --card:#0b1220;
-      --accent:#22c55e;
-      --muted:#94a3b8;
-      --danger:#ef4444;
-      font-family: Inter, sans-serif;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:#e6eef8;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-    }
-    .wrap{
-      width:100%;
-      max-width:900px;
-      display:grid;
-      grid-template-columns: 1fr 280px;
-      gap:18px;
-    }
-    @media (max-width:800px){.wrap{grid-template-columns:1fr}}
-    .card{
-      background:var(--card);
-      border-radius:12px;
-      padding:16px;
-    }
-    .q-text{font-size:20px;font-weight:600;margin-bottom:12px}
-    .choices{display:grid;gap:10px}
-    .choice{
-      background:rgba(255,255,255,0.05);
-      padding:12px;
-      border-radius:8px;
-      cursor:pointer;
-      border:2px solid transparent;
-      transition:.15s;
-    }
-    .choice.correct{border-color:var(--accent)}
-    .choice.wrong{border-color:var(--danger)}
-    button.btn{
-      background:var(--accent);
-      border:none;
-      color:#052e14;
-      font-weight:700;
-      padding:10px 14px;
-      border-radius:8px;
-      cursor:pointer;
-      margin-top:12px;
+    :root {
+      --bg: #0f1724;
+      --panel: #1e293b;
+      --accent: #22c55e;
+      --muted: #94a3b8;
+      --danger: #ef4444;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     }
 
-    /* Popup skor akhir */
-    .popup{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,0.7);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      z-index:10;
-      visibility:hidden;
-      opacity:0;
-      transition:opacity .3s ease;
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: var(--font);
+      background: radial-gradient(circle at center, #0f1724, #020617);
+      color: #e6eef8;
+      text-align: center;
     }
-    .popup.active{visibility:visible;opacity:1}
-    .popup-box{
-      background:var(--card);
-      border-radius:14px;
-      padding:24px;
-      text-align:center;
-      max-width:400px;
-      width:90%;
-      box-shadow:0 10px 30px rgba(0,0,0,0.4);
+
+    /* MENU UTAMA */
+    #mainMenu {
+      display: none;
+      margin-top: 120px;
     }
-    .popup-box h2{margin-top:0;color:var(--accent)}
-    .popup-box p{color:var(--muted);margin:8px 0}
-    .popup-box button{
-      background:var(--accent);
-      color:#052e14;
-      border:none;
-      padding:10px 18px;
-      border-radius:8px;
-      font-weight:700;
-      cursor:pointer;
-      margin-top:14px;
+
+    .menu-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin-top: 30px;
     }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      
+      cursor: pointer;
+      transition: transform 0.2s, background 0.3s;
+      width: 220px;
+    }
+
+    button:hover {
+      background: #16a34a;
+      transform: scale(1.05);
+    }
+
+    /* MENU INPUT NAMA */
+    #nameInputMenu, #leaderboardMenu, #settingsMenu {
+      display: none;
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 30px;
+      width: 350px;
+      margin: 100px auto;
+      box-shadow: 0 0 20px rgba(34,197,94,0.3);
+    }
+
+    /* Tambahkan jarak antar tombol di menu input nama */
+    #nameInputMenu button {
+      display: block;
+      margin: 10px auto; /* kasih jarak antar tombol */
+      width: 80%;
+    }
+
+    #playBtn {
+      margin-bottom: 20px; /* tombol “Mulai Bermain” agak turun biar gak nempel dengan tombol “Kembali” */
+    }
+
+
+    input[type="text"] {
+      padding: 10px;
+      width: 80%;
+      border: none;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    /* GAME CONTAINER */
+    #gameContainer {
+      display: none;
+      margin-top: 40px;
+    }
+
+    #gameBoard {
+      background: #1e293b;
+      border: 2px solid var(--accent);
+      margin: 20px auto;
+      display: block;
+    }
+
+    /* LEADERBOARD */
+    #leaderboardList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #backFromLeaderboard {
+  margin-top: 40px; /* ✅ biar agak turun */
+  background: linear-gradient(135deg, #a39a16, #22c55e); /* 🌈 gradient hijau */
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.3s;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+}
+
+#backFromLeaderboard:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
+}
+
+
+    #leaderboardList li {
+      background: linear-gradient(135deg, #22c55e, #0ea5e9);
+      color: white;
+      margin: 8px 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      width: 230px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 0 15px rgba(34,197,94,0.5);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+    }
+
+    #leaderboardList li:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px rgba(14,165,233,0.6);
+    }
+
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="card main">
-      <div id="qText" class="q-text">Memuat soal...</div>
-      <div id="choices" class="choices"></div>
-      <button id="nextBtn" class="btn">Next</button>
-    </section>
-    <aside class="card side">
-      <p>Skor: <strong id="score">0</strong></p>
-      <p>Soal: <span id="progress">0</span> / <span id="total">0</span></p>
-    </aside>
-  </main>
-
-  <!-- Popup hasil skor -->
-  <div id="popup" class="popup">
-    <div class="popup-box">
-      <h2></h2>
-      <h2>GULI AKU TINTING</h2>
-      <h2>LAYANGAN AKU TAREK</h2>
-      <h2>ANTAR AKU KE BETING</h2>
-      <h2>AKU NAK TEREK</h2>
-      <p id="finalScore">Skor akhir: 0</p>
-      <p id="highScore">Skor tertinggi: 0</p>
-      <button id="playAgain">Main Lagi</button>
+  <!-- MENU UTAMA -->
+  <div id="mainMenu">
+    <h1>🐍 Snake — Adib Edition</h1>
+    <div class="menu-buttons">
+      <button id="startGameBtn">Main Game</button>
+      <button id="leaderboardBtn">Leaderboard</button>
+      <button id="settingsBtn">Setting</button>
     </div>
   </div>
 
-  <!-- Lagu Game Over -->
-  <audio id="gameOverMusic" src="bet-polibet.mp3" preload="auto"></audio>
+  <!-- INPUT NAMA -->
+  <div id="nameInputMenu">
+    <h2>Masukkan Nama Kamu</h2>
+    <input type="text" id="playerNameInput" placeholder="Contoh: Adib" />
+    <button id="playBtn">Mulai Bermain</button>
+    <button id="backToMenuBtn">Kembali</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="gameContainer">
+    <h2 id="playerNameDisplay"></h2>
+    <canvas id="gameBoard" width="400" height="400"></canvas>
+    <h3>Skor: <span id="scoreDisplay">0</span></h3>
+    <button id="exitBtn">Keluar</button>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div id="leaderboardMenu">
+    <h2>🏆 Leaderboard</h2>
+    <ul id="leaderboardList"></ul>
+    <button id="backFromLeaderboard">Kembali</button>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settingsMenu">
+    <h2>🎵 Pengaturan Suara</h2>
+    <label>
+      <input type="checkbox" id="soundToggle" checked /> Suara Aktif
+    </label><br><br>
+    <button id="backFromSettings">Kembali</button>
+  </div>
 
   <script>
-    const QUESTIONS = [
-      {q:"Beli sabu dimane ?",choices:["Setegar","Beting","Serdam","Paris"],correct:1},
-      {q:"Cara menikmati sabu ?",choices:["Dihirup","Ditelan","Diberakan","Dibuang"],correct:0},
-      {q:"Siape yang suke sabu ?",choices:["Fawwaz","Rio","Izzuddin","Benar semua"],correct:3},
-      {q:"Kemana rio make sabu ?",choices:["Beting","Dansen","Ampera","Ujung pandang"],correct:2},
+    const mainMenu = document.getElementById('mainMenu');
+    const nameInputMenu = document.getElementById('nameInputMenu');
+    const leaderboardMenu = document.getElementById('leaderboardMenu');
+    const settingsMenu = document.getElementById('settingsMenu');
+    const gameContainer = document.getElementById('gameContainer');
+
+    const startGameBtn = document.getElementById('startGameBtn');
+    const leaderboardBtn = document.getElementById('leaderboardBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const playBtn = document.getElementById('playBtn');
+    const backToMenuBtn = document.getElementById('backToMenuBtn');
+    const backFromLeaderboard = document.getElementById('backFromLeaderboard');
+    const backFromSettings = document.getElementById('backFromSettings');
+    const playerNameInput = document.getElementById('playerNameInput');
+    const playerNameDisplay = document.getElementById('playerNameDisplay');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const gameBoard = document.getElementById('gameBoard');
+    const exitBtn = document.getElementById('exitBtn');
+    const leaderboardList = document.getElementById('leaderboardList');
+    const soundToggle = document.getElementById('soundToggle');
+
+    let playerName = "";
+    let score = 0;
+    let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+    let soundEnabled = true;
+
+    mainMenu.style.display = 'block'; // tampilkan menu utama pertama kali
+
+    // ====== NAVIGASI MENU ======
+    startGameBtn.onclick = () => {
+      mainMenu.style.display = 'none';
+      nameInputMenu.style.display = 'block';
+    };
+
+    leaderboardBtn.onclick = () => {
+      mainMenu.style.display = 'none';
+      showLeaderboard();
+    };
+
+    settingsBtn.onclick = () => {
+      mainMenu.style.display = 'none';
+      settingsMenu.style.display = 'block';
+    };
+
+    backToMenuBtn.onclick = () => {
+      nameInputMenu.style.display = 'none';
+      mainMenu.style.display = 'block';
+    };
+
+    backFromLeaderboard.onclick = () => {
+      leaderboardMenu.style.display = 'none';
+      mainMenu.style.display = 'block';
       
-    ];
-
-    let idx=0,score=0;
-    const qText=document.getElementById("qText");
-    const choices=document.getElementById("choices");
-    const nextBtn=document.getElementById("nextBtn");
-    const scoreEl=document.getElementById("score");
-    const progress=document.getElementById("progress");
-    const total=document.getElementById("total");
-    const popup=document.getElementById("popup");
-    const finalScore=document.getElementById("finalScore");
-    const highScore=document.getElementById("highScore");
-    const playAgain=document.getElementById("playAgain");
-    const gameOverMusic=document.getElementById("gameOverMusic");
-
-    // Izinkan audio setelah klik pertama
-    document.body.addEventListener('click', ()=>{
-      gameOverMusic.play().catch(()=>{});
-      gameOverMusic.pause();
-    }, {once:true});
-
-    total.textContent=QUESTIONS.length;
-    const HS_KEY="highscore_quiz";
-    let high=parseInt(localStorage.getItem(HS_KEY)||"0",10);
-    highScore.textContent="Skor tertinggi: "+high;
-
-    function loadQuestion(){
-      const q=QUESTIONS[idx];
-      qText.textContent=q.q;
-      progress.textContent=idx+1;
-      choices.innerHTML="";
-      q.choices.forEach((c,i)=>{
-        const div=document.createElement("div");
-        div.className="choice";
-        div.textContent=c;
-        div.onclick=()=>selectChoice(div,i);
-        choices.appendChild(div);
-      });
-    }
-
-    function selectChoice(div,i){
-      const q=QUESTIONS[idx];
-      const all=document.querySelectorAll(".choice");
-      all.forEach(c=>c.onclick=null);
-      if(i===q.correct){
-        div.classList.add("correct");
-        score+=10;
-      }else{
-        div.classList.add("wrong");
-        score=Math.max(0,score-3);
-        all[q.correct].classList.add("correct");
-      }
-      scoreEl.textContent=score;
-    }
-
-    nextBtn.onclick=()=>{
-      if(idx<QUESTIONS.length-1){
-        idx++;
-        loadQuestion();
-      }else{
-        showPopup();
-      }
+      
     };
 
-    function showPopup(){
-      finalScore.textContent="Skor akhir: "+score;
-      if(score>high){
-        high=score;
-        localStorage.setItem(HS_KEY,high);
-      }
-      highScore.textContent="Skor tertinggi: "+high;
-      popup.classList.add("active");
-      gameOverMusic.currentTime=0;
-      gameOverMusic.play(); // lagu diputar di akhir
-    }
-
-    playAgain.onclick=()=>{
-      popup.classList.remove("active");
-      idx=0;
-      score=0;
-      scoreEl.textContent=0;
-      loadQuestion();
-      gameOverMusic.pause();
-      gameOverMusic.currentTime=0;
+    backFromSettings.onclick = () => {
+      settingsMenu.style.display = 'none';
+      mainMenu.style.display = 'block';
     };
 
-    loadQuestion();
+    soundToggle.onchange = () => {
+      soundEnabled = soundToggle.checked;
+    };
+
+    // ====== GAME LOGIC ======
+    const ctx = gameBoard.getContext('2d');
+    const grid = 20;
+    let snake, food, dx, dy, game;
+
+    playBtn.onclick = () => {
+      playerName = playerNameInput.value.trim();
+      if (!playerName) {
+        alert("Masukkan nama dulu, Adib!");
+        return;
+      }
+      nameInputMenu.style.display = 'none';
+      gameContainer.style.display = 'block';
+      playerNameDisplay.textContent = "Pemain: " + playerName;
+      startGame();
+    };
+
+    function startGame() {
+      snake = [{ x: 160, y: 200 }];
+      dx = grid;
+      dy = 0;
+      score = 0;
+      food = randomFood();
+      scoreDisplay.textContent = score;
+      document.addEventListener('keydown', changeDirection);
+      game = setInterval(updateGame, 100);
+    }
+
+    function randomFood() {
+      return {
+        x: Math.floor(Math.random() * 20) * grid,
+        y: Math.floor(Math.random() * 20) * grid
+      };
+    }
+
+    function updateGame() {
+      const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+      if (head.x < 0 || head.x >= 400 || head.y < 0 || head.y >= 400 ||
+          snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+        endGame();
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        scoreDisplay.textContent = score;
+        food = randomFood();
+      } else {
+        snake.pop();
+      }
+
+      ctx.clearRect(0, 0, 400, 400);
+      ctx.fillStyle = getAccent();
+      snake.forEach(seg => ctx.fillRect(seg.x, seg.y, grid - 2, grid - 2));
+      ctx.fillStyle = "#ef4444";
+      ctx.fillRect(food.x, food.y, grid - 2, grid - 2);
+    }
+
+    function changeDirection(e) {
+      switch (e.key) {
+        case "ArrowUp": if (dy === 0) { dx = 0; dy = -grid; } break;
+        case "ArrowDown": if (dy === 0) { dx = 0; dy = grid; } break;
+        case "ArrowLeft": if (dx === 0) { dx = -grid; dy = 0; } break;
+        case "ArrowRight": if (dx === 0) { dx = grid; dy = 0; } break;
+      }
+    }
+
+    function getAccent() {
+      return getComputedStyle(document.documentElement).getPropertyValue('--accent');
+    }
+
+    function endGame() {
+      clearInterval(game);
+      alert(`Game Over, ${playerName}! Skor kamu: ${score}`);
+      saveLeaderboard(playerName, score);
+      gameContainer.style.display = 'none';
+      mainMenu.style.display = 'block';
+    }
+
+    exitBtn.onclick = () => {
+      clearInterval(game);
+      gameContainer.style.display = 'none';
+      mainMenu.style.display = 'block';
+    };
+
+    // ====== LEADERBOARD ======
+    function saveLeaderboard(name, score) {
+      leaderboard.push({ name, score });
+      leaderboard.sort((a, b) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 5);
+      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+    }
+
+    function showLeaderboard() {
+      leaderboardMenu.style.display = 'block';
+      leaderboardList.innerHTML = leaderboard.length
+        ? leaderboard.map((e, i) => `<li><span>#${i + 1}</span><span>${e.name}</span><span>${e.score}</span></li>`).join("")
+        : "<li>Belum ada skor</li>";
+    }
   </script>
 </body>
 </html>
-
